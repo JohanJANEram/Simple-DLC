@@ -44,9 +44,9 @@
     .row{ display:flex; gap:12px; flex-wrap:wrap; }
     .grid{ display:grid; grid-template-columns:1fr; gap:12px; margin-top:14px; }
     @media (min-width: 780px){ .grid{ grid-template-columns: 1fr 1fr 1fr; } }
-    .result{ background: transparent; border:1px dashed var(--border); border-radius:14px; padding:12px; display:flex; gap:8px; align-items:center; min-height:56px; }
+    .result{ background: transparent; border:1px dashed var(--border); border-radius:14px; padding:12px; display:flex; gap:8px; align-items:center; min-height:56px; max-width:100%; overflow:hidden; }
     .result strong{ min-width:130px; }
-    .result code{ flex:1; display:block; white-space:nowrap; overflow:auto; min-width:0; }
+    .result input[type="text"]{ flex:1; display:block; background:transparent; border:none; outline:none; color:var(--text); font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; font-size:14px; padding:6px 0; white-space: nowrap; overflow-x: auto; min-width:0; }
     .notice{ font-size: 13px; color: var(--muted); margin-top:10px; }
     .pill{ display:inline-flex; align-items:center; gap:8px; padding:6px 10px; border-radius:999px; font-size:12px; background: transparent; border:1px solid var(--border); color:var(--muted); }
     .hidden{ display:none; }
@@ -99,19 +99,11 @@
       <div id="outputs" class="grid hidden" aria-live="polite">
         <div class="result">
           <strong style="min-width:140px" data-i18n="direct">Direct (bersih)</strong>
-          <code id="outDirect"></code>
+          <input id="outDirect" type="text" readonly value="" aria-label="Direct download link" />
           <button class="btn secondary" data-copy="outDirect" data-i18n="copy">Copy</button>
         </div>
-        <div class="result">
-          <strong style="min-width:140px" data-i18n="dl1">Dropbox (dl=1)</strong>
-          <code id="outDl1"></code>
-          <button class="btn secondary" data-copy="outDl1" data-i18n="copy">Copy</button>
-        </div>
-        <div class="result">
-          <strong style="min-width:140px" data-i18n="preview">Preview (opsional)</strong>
-          <code id="outPreview"></code>
-          <button class="btn secondary" data-copy="outPreview" data-i18n="copy">Copy</button>
-        </div>
+      </div>
+        
       </div>
 
       <div id="msg" class="notice"></div>
@@ -123,179 +115,126 @@
   </div>
 
 <script>
-(function(){
+(()=>{
+  // ===== Utilities =====
+  const $ = (s)=>document.querySelector(s);
+  const $$ = (s)=>Array.from(document.querySelectorAll(s));
+
+  // ===== i18n strings =====
   const STR = {
-    id: {
-      title: "Simple Dropbox Link Cleaner",
-      subtitle: "Ubah link Dropbox jadi tautan unduhan langsung untuk dibagikan.",
-      placeholder: "Tempel link Dropbox di sini… (contoh: https://www.dropbox.com/scl/fi/...)",
-      convert: "Bersihkan",
-      reset: "Reset",
-      tip: 'Tip: Bisa pakai semua format share link seperti <code>/s/</code> atau <code>/scl/fi/…</code>. Hasil “bersih” memakai <code>dl.dropboxusercontent.com</code> sehingga langsung unduh.',
-      direct: "Direct (bersih)",
-      dl1: "Dropbox (dl=1)",
-      preview: "Preview (opsional)",
-      copy: "Copy",
-      status_copied: "Tersalin ke clipboard.",
-      status_paste: "Tempel link Dropbox terlebih dahulu.",
-      status_cleaned: "Link berhasil dibersihkan.",
-      status_notdbx: "Bukan link Dropbox.",
-      theme: "Tema",
-      footer: "Dibuat untuk mempermudah berbagi link Dropbox yang langsung mengunduh file. Tidak menyentuh file—hanya mengubah domain/parameter link. Simpan halaman ini dan host di GitHub Pages/Netlify/Vercel untuk dipakai bersama."
+    id:{
+      title:"Simple Dropbox Link Cleaner",
+      subtitle:"Ubah link Dropbox jadi tautan unduhan langsung untuk dibagikan.",
+      placeholder:"Tempel link Dropbox di sini… (contoh: https://www.dropbox.com/scl/fi/...)",
+      convert:"Bersihkan",
+      reset:"Reset",
+      tip:'Tip: Bisa pakai semua format share link seperti <code>/s/</code> atau <code>/scl/fi/…</code>. Hasil “bersih” memakai <code>dl.dropboxusercontent.com</code> sehingga langsung unduh.',
+      direct:"Direct (bersih)", dl1:"Dropbox (dl=1)", preview:"Preview (opsional)", copy:"Copy",
+      status_copied:"Tersalin ke clipboard.", status_paste:"Tempel link Dropbox terlebih dahulu.", status_cleaned:"Link berhasil dibersihkan.", status_notdbx:"Bukan link Dropbox.", theme:"Tema",
+      footer:"Dibuat untuk mempermudah berbagi link Dropbox yang langsung mengunduh file. Tidak menyentuh file—hanya mengubah domain/parameter link. Simpan halaman ini dan host di GitHub Pages/Netlify/Vercel untuk dipakai bersama."
     },
-    en: {
-      title: "Simple Dropbox Link Cleaner",
-      subtitle: "Turn any Dropbox share link into a direct download URL.",
-      placeholder: "Paste a Dropbox link here… (e.g., https://www.dropbox.com/scl/fi/...)",
-      convert: "Clean Link",
-      reset: "Reset",
-      tip: 'Tip: Works with any share format like <code>/s/</code> or <code>/scl/fi/…</code>. The “clean” result uses <code>dl.dropboxusercontent.com</code> for instant download.',
-      direct: "Direct (clean)",
-      dl1: "Dropbox (dl=1)",
-      preview: "Preview (optional)",
-      copy: "Copy",
-      status_copied: "Copied to clipboard.",
-      status_paste: "Paste a Dropbox link first.",
-      status_cleaned: "Link cleaned successfully.",
-      status_notdbx: "Not a Dropbox link.",
-      theme: "Theme",
-      footer: "Built to share Dropbox links as direct downloads. It never touches your files—only changes domain/params. Save this page and host on GitHub Pages/Netlify/Vercel to share with others."
+    en:{
+      title:"Simple Dropbox Link Cleaner",
+      subtitle:"Turn any Dropbox share link into a direct download URL.",
+      placeholder:"Paste a Dropbox link here… (e.g., https://www.dropbox.com/scl/fi/...)",
+      convert:"Clean Link",
+      reset:"Reset",
+      tip:'Tip: Works with any share format like <code>/s/</code> or <code>/scl/fi/…</code>. The “clean” result uses <code>dl.dropboxusercontent.com</code> for instant download.',
+      direct:"Direct (clean)", dl1:"Dropbox (dl=1)", preview:"Preview (optional)", copy:"Copy",
+      status_copied:"Copied to clipboard.", status_paste:"Paste a Dropbox link first.", status_cleaned:"Link cleaned successfully.", status_notdbx:"Not a Dropbox link.", theme:"Theme",
+      footer:"Built to share Dropbox links as direct downloads. It never touches your files—only changes domain/params. Save this page and host on GitHub Pages/Netlify/Vercel to share with others."
     }
   };
 
-  const src = document.getElementById('src');
-  const btn = document.getElementById('btnConvert');
-  const btnReset = document.getElementById('btnReset');
-  const outputs = document.getElementById('outputs');
-  const outDirect = document.getElementById('outDirect');
-  const outDl1 = document.getElementById('outDl1');
-  const outPreview = document.getElementById('outPreview');
-  const msg = document.getElementById('msg');
-  const langSel = document.getElementById('lang');
-  const themeBtn = document.getElementById('themeBtn');
+  // ===== Elements =====
+  const src = $('#src');
+  const btn = $('#btnConvert');
+  const btnReset = $('#btnReset');
+  const outputs = $('#outputs');
+  const outDirect = $('#outDirect');
+  const msg = $('#msg');
+  const langSel = $('#lang');
+  const themeBtn = $('#themeBtn');
 
-  // Preferences
-  const pref = {
-    get lang() { return localStorage.getItem('lang') || defaultLang(); },
-    set lang(v) { localStorage.setItem('lang', v); },
-    get theme() { return localStorage.getItem('theme') || 'auto'; },
-    set theme(v) { localStorage.setItem('theme', v); }
-  };
-
-  function defaultLang(){
-    const n = navigator.language || 'id';
-    return /^en(\-|$)/i.test(n) ? 'en' : 'id';
+  if(!src||!btn||!btnReset||!langSel||!themeBtn){
+    console.warn('Init failed: missing elements');
+    return;
   }
 
-  // i18n
+  // ===== Preferences =====
+  const pref = {
+    get lang(){ return localStorage.getItem('lang') || defaultLang(); },
+    set lang(v){ localStorage.setItem('lang', v); },
+    get theme(){ return localStorage.getItem('theme') || 'auto'; },
+    set theme(v){ localStorage.setItem('theme', v); }
+  };
+
+  function defaultLang(){ return (/^en(\-|$)/i.test(navigator.language||'')) ? 'en' : 'id'; }
+
+  // ===== i18n =====
   function applyI18n(l){
     const dict = STR[l] || STR.id;
     document.documentElement.lang = l;
-    // Simple text nodes
-    document.querySelectorAll('[data-i18n]').forEach(el=>{
-      const k = el.getAttribute('data-i18n');
-      if (dict[k]) el.innerHTML = dict[k];
-    });
-    // Placeholder
-    document.querySelectorAll('[data-i18n-placeholder]').forEach(el=>{
-      const k = el.getAttribute('data-i18n-placeholder');
-      if (dict[k]) el.setAttribute('placeholder', dict[k]);
-    });
+    $$('[data-i18n]').forEach(el=>{ const k=el.getAttribute('data-i18n'); if(dict[k]) el.innerHTML=dict[k]; });
+    $$('[data-i18n-placeholder]').forEach(el=>{ const k=el.getAttribute('data-i18n-placeholder'); if(dict[k]) el.setAttribute('placeholder', dict[k]); });
   }
 
-  // Theme
+  // ===== Theme =====
   function systemPrefersDark(){
-    return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+    try{ return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches; }catch(e){ return false; }
   }
   function applyTheme(mode){
-    // mode: 'light' | 'dark' | 'auto'
     const root = document.documentElement;
-    const m = (mode === 'auto') ? (systemPrefersDark() ? 'dark' : 'light') : mode;
-    root.classList.toggle('light', m === 'light');
-    root.classList.toggle('dark', m === 'dark');
+    let m = mode==='auto' ? (systemPrefersDark()? 'dark':'light') : (mode||'light');
+    root.classList.remove('light','dark');
+    root.classList.add(m);
     root.setAttribute('data-theme', mode);
-    themeBtn.querySelector('span[data-i18n="theme"]').textContent = (STR[pref.lang] || STR.id).theme + ' (' + m + ')';
+    const label = (STR[pref.lang]||STR.id).theme;
+    const labelSpan = themeBtn.querySelector('[data-i18n="theme"]');
+    if(labelSpan) labelSpan.textContent = `${label} (${m})`;
   }
 
-  // Helpers
-  function isDropboxHost(host){
-    return /(^|\.)dropbox\.com$/i.test(host) || /(^|\.)dropboxusercontent\.com$/i.test(host);
-  }
-  function toDirect(u){
-    const url = new URL(u);
-    if(!isDropboxHost(url.hostname)) throw new Error('NOT_DBX');
-    url.protocol = 'https:';
-    url.hostname = 'dl.dropboxusercontent.com';
-    url.searchParams.delete('dl');
-    return url.toString();
-  }
-  function toDl1(u){
-    const url = new URL(u);
-    if(!isDropboxHost(url.hostname)) throw new Error('NOT_DBX');
-    url.protocol = 'https:';
-    url.hostname = 'www.dropbox.com';
-    url.searchParams.set('dl','1');
-    return url.toString();
-  }
-  function toPreview(u){
-    const url = new URL(u);
-    if(!isDropboxHost(url.hostname)) throw new Error('NOT_DBX');
-    url.protocol = 'https:';
-    url.hostname = 'www.dropbox.com';
-    if(url.searchParams.has('dl')) url.searchParams.set('dl','0');
-    return url.toString();
-  }
-  async function copyFrom(id){
-    const el = document.getElementById(id);
-    const text = el?.textContent || '';
-    if(!text) return;
-    try{ await navigator.clipboard.writeText(text); flash('status_copied'); }
-    catch(e){ flashRaw('Copy failed. Select and press Ctrl/Cmd+C.'); }
-  }
-  function flash(key, isError=false){
-    const dict = STR[pref.lang] || STR.id;
-    msg.textContent = dict[key] || key;
-    msg.style.color = isError ? getComputedStyle(document.documentElement).getPropertyValue('--bad') : getComputedStyle(document.documentElement).getPropertyValue('--muted');
-  }
-  function flashRaw(text, isError=false){
-    msg.textContent = text;
-    msg.style.color = isError ? getComputedStyle(document.documentElement).getPropertyValue('--bad') : getComputedStyle(document.documentElement).getPropertyValue('--muted');
-  }
+  // ===== Core =====
+  function isDropboxHost(host){ return /(^|\.)dropbox\.com$/i.test(host) || /(^|\.)dropboxusercontent\.com$/i.test(host); }
+  function toDirect(u){ const url=new URL(u); if(!isDropboxHost(url.hostname)) throw new Error('NOT_DBX'); url.protocol='https:'; url.hostname='dl.dropboxusercontent.com'; url.searchParams.delete('dl'); return url.toString(); }
+  function toDl1(u){ const url=new URL(u); if(!isDropboxHost(url.hostname)) throw new Error('NOT_DBX'); url.protocol='https:'; url.hostname='www.dropbox.com'; url.searchParams.set('dl','1'); return url.toString(); }
+  function toPreview(u){ const url=new URL(u); if(!isDropboxHost(url.hostname)) throw new Error('NOT_DBX'); url.protocol='https:'; url.hostname='www.dropbox.com'; if(url.searchParams.has('dl')) url.searchParams.set('dl','0'); return url.toString(); }
 
-  // Events
-  btn.addEventListener('click', () => {
-    const val = (src.value || '').trim();
+  async function copyFrom(id){ const el = document.getElementById(id); const text = el ? (('value' in el) ? el.value : (el.textContent||'')) : ''; if(!text) return; try{ await navigator.clipboard.writeText(text); flash('status_copied'); }catch(e){ flashRaw('Copy failed. Select and press Ctrl/Cmd+C.'); } }
+  function flash(key,isError=false){ const dict = STR[pref.lang]||STR.id; msg.textContent = dict[key]||key; msg.style.color = isError ? getVar('--bad') : getVar('--muted'); }
+  function flashRaw(text,isError=false){ msg.textContent=text; msg.style.color = isError ? getVar('--bad') : getVar('--muted'); }
+  function getVar(name){ return getComputedStyle(document.documentElement).getPropertyValue(name); }
+
+  // ===== Events =====
+  btn.addEventListener('click',()=>{
+    const val=(src.value||'').trim();
     if(!val){ outputs.classList.add('hidden'); flash('status_paste', true); return; }
-    try{
-      outDirect.textContent = toDirect(val);
-      outDl1.textContent = toDl1(val);
-      outPreview.textContent = toPreview(val);
-      outputs.classList.remove('hidden');
-      flash('status_cleaned');
-    }catch(e){
-      outputs.classList.add('hidden');
-      flash(e.message === 'NOT_DBX' ? 'status_notdbx' : 'status_paste', true);
-    }
+    try{ outDirect.value = toDirect(val); outputs.classList.remove('hidden'); flash('status_cleaned'); }
+    catch(e){ outputs.classList.add('hidden'); flash(e.message==='NOT_DBX'?'status_notdbx':'status_paste', true); }
   });
-  document.addEventListener('click', (e)=>{ const t=e.target; if(t.matches('[data-copy]')) copyFrom(t.getAttribute('data-copy')); });
-  btnReset.addEventListener('click', ()=>{ src.value=''; outputs.classList.add('hidden'); msg.textContent=''; });
-  // (Auto-convert on paste removed to avoid unexpected conversions)
- });
+  document.addEventListener('click',(e)=>{ const t=e.target; if(t.matches('[data-copy]')) copyFrom(t.getAttribute('data-copy')); });
+  btnReset.addEventListener('click',()=>{ src.value=''; if(outDirect) outDirect.value=''; outputs.classList.add('hidden'); msg.textContent=''; });
 
-  // Init preferences
+  // ===== Init =====
   langSel.value = pref.lang;
   applyI18n(langSel.value);
   applyTheme(pref.theme);
-
-  langSel.addEventListener('change', ()=>{ pref.lang = langSel.value; applyI18n(langSel.value); applyTheme(pref.theme); });
-  themeBtn.addEventListener('click', ()=>{
+  langSel.addEventListener('change',()=>{ pref.lang = langSel.value; applyI18n(langSel.value); applyTheme(pref.theme); });
+  themeBtn.addEventListener('click',()=>{
     const curr = pref.theme;
-    const next = curr === 'auto' ? 'light' : curr === 'light' ? 'dark' : 'auto';
+    let next;
+    if(curr==='auto'){
+      // Dari auto → langsung ke kebalikan tema efektif sekarang (1 klik)
+      next = systemPrefersDark()? 'light' : 'dark';
+    } else if (curr==='light') {
+      next = 'dark';
+    } else { // curr === 'dark'
+      next = 'auto';
+    }
     pref.theme = next; applyTheme(next);
   });
 
-  // react to system theme changes when in auto
-  try{ window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', ()=>{ if(pref.theme==='auto') applyTheme('auto'); }); }catch(e){}
+  try{ window.matchMedia('(prefers-color-scheme: dark)')?.addEventListener?.('change', ()=>{ if(pref.theme==='auto') applyTheme('auto'); }); }catch(e){}
 })();
 </script>
 </body>
