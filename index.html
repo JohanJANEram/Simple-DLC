@@ -46,7 +46,7 @@
     @media (min-width: 780px){ .grid{ grid-template-columns: 1fr 1fr 1fr; } }
     .result{ background: transparent; border:1px dashed var(--border); border-radius:14px; padding:12px; display:flex; gap:8px; align-items:center; min-height:56px; }
     .result strong{ min-width:130px; }
-    .result code{ flex:1; display:block; white-space:nowrap; overflow:auto; }
+    .result code{ flex:1; display:block; white-space:nowrap; overflow:auto; min-width:0; }
     .notice{ font-size: 13px; color: var(--muted); margin-top:10px; }
     .pill{ display:inline-flex; align-items:center; gap:8px; padding:6px 10px; border-radius:999px; font-size:12px; background: transparent; border:1px solid var(--border); color:var(--muted); }
     .hidden{ display:none; }
@@ -279,7 +279,8 @@
   });
   document.addEventListener('click', (e)=>{ const t=e.target; if(t.matches('[data-copy]')) copyFrom(t.getAttribute('data-copy')); });
   btnReset.addEventListener('click', ()=>{ src.value=''; outputs.classList.add('hidden'); msg.textContent=''; });
-  src.addEventListener('paste', ()=>{ setTimeout(()=>btn.click(),0); });
+  // (Auto-convert on paste removed to avoid unexpected conversions)
+ });
 
   // Init preferences
   langSel.value = pref.lang;
