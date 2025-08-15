@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="id" data-theme="auto">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Dropbox Direct-Download Link Cleaner</title>
+  <meta name="description" content="Ubah link Dropbox menjadi link download langsung (bersih) yang bisa dibagikan ke siapa saja.">
+  <style>
+    :root{
+      --bg: #0b1020; --card:#121831; --muted:#6b7aa6; --text:#e9ecf5; --accent:#7aa2ff; --ok:#2ecc71; --bad:#ff6b6b; --border: rgba(255,255,255,.08);
+    }
+    :root.light{
+      --bg: #f7f8fc; --card:#ffffff; --muted:#5a6a85; --text:#0f172a; --accent:#3b82f6; --ok:#16a34a; --bad:#ef4444; --border: rgba(0,0,0,.08);
+    }
+
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body{
+      margin:0; font-family: system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+      background: var(--bg); color: var(--text);
+    }
+    .wrap{ max-width: 980px; margin: 40px auto; padding: 0 16px; }
+    header{ display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom:18px; }
+    .brand{ display:flex; align-items:center; gap:12px; }
+    .brand img.logo{ width:48px; height:48px; object-fit:contain; filter: drop-shadow(0 4px 10px rgba(0,0,0,.15)); }
+    .brand .titles h1{ font-size: clamp(20px, 4.6vw, 30px); margin:0; }
+    .brand .titles .sub{ font-size: 13px; color: var(--muted); }
+    .actions{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+    select, .btn, input[type="url"] {
+      font: inherit;
+    }
+    .btn{
+      appearance:none; border:none; border-radius:12px; padding:12px 16px; cursor:pointer;
+      font-weight:600; color:#0a0f1c; background:var(--accent); transition:.15s transform ease, .15s opacity ease;
+    }
+    .btn.secondary{ background:transparent; border:1px solid var(--border); color:var(--text); }
+    .btn.icon{ padding:10px 12px; display:inline-flex; align-items:center; gap:8px; }
+    .btn:active{ transform: translateY(1px); }
+    .select, .input{ background:var(--card); border:1px solid var(--border); border-radius:14px; padding:8px 12px; }
+    .select select{ background:transparent; border:none; outline:none; color:var(--text); }
+    .input{ display:flex; align-items:center; gap:10px; }
+    input[type="url"]{ flex:1; background:transparent; border:none; outline:none; color:var(--text); font-size:16px; }
+    .card{ background:var(--card); border:1px solid var(--border); border-radius:18px; padding:18px; box-shadow: 0 10px 30px rgba(0,0,0,.10);}
+    .row{ display:flex; gap:12px; flex-wrap:wrap; }
+    .grid{ display:grid; grid-template-columns:1fr; gap:12px; margin-top:14px; }
+    @media (min-width: 780px){ .grid{ grid-template-columns: 1fr 1fr 1fr; } }
+    .result{ background: transparent; border:1px dashed var(--border); border-radius:14px; padding:12px; display:flex; gap:8px; align-items:center; min-height:56px; }
+    .result strong{ min-width:130px; }
+    .result code{ flex:1; display:block; white-space:nowrap; overflow:auto; }
+    .notice{ font-size: 13px; color: var(--muted); margin-top:10px; }
+    .pill{ display:inline-flex; align-items:center; gap:8px; padding:6px 10px; border-radius:999px; font-size:12px; background: transparent; border:1px solid var(--border); color:var(--muted); }
+    .hidden{ display:none; }
+    footer{ margin-top:24px; font-size:12px; color: var(--muted); }
+    .toggle{
+      display:inline-flex; align-items:center; gap:8px; border:1px solid var(--border); padding:8px 12px; border-radius:999px; background:var(--card);
+    }
+    .toggle input{ display:none; }
+    .toggle .dot{
+      width:18px; height:18px; border-radius:50%; border:1px solid var(--border);
+      background: linear-gradient(180deg, #fff, #eaeaea);
+    }
+    .toggles{ display:flex; gap:8px; flex-wrap:wrap; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="brand">
+        <img class="logo" src="logo.png" alt="Logo">
+        <div class="titles">
+          <h1 data-i18n="title">Dropbox Direct-Download Link Cleaner</h1>
+          <div class="sub" data-i18n="subtitle">Ubah link Dropbox jadi tautan unduhan langsung untuk dibagikan.</div>
+        </div>
+      </div>
+      <div class="actions">
+        <div class="select" title="Language">
+          <select id="lang">
+            <option value="id">Bahasa Indonesia</option>
+            <option value="en">English</option>
+          </select>
+        </div>
+        <button class="btn secondary icon" id="themeBtn" title="Toggle theme">
+          <span aria-hidden="true">🌓</span>
+          <span data-i18n="theme">Tema</span>
+        </button>
+      </div>
+    </header>
+
+    <section class="card">
+      <div class="row">
+        <div class="input" style="flex:1 1 520px">
+          <input id="src" type="url" inputmode="url" placeholder="Tempel link Dropbox di sini… (contoh: https://www.dropbox.com/scl/fi/...)" data-i18n-placeholder="placeholder">
+        </div>
+        <button class="btn" id="btnConvert" data-i18n="convert">Bersihkan</button>
+        <button class="btn secondary" id="btnReset" title="Bersihkan form" data-i18n="reset">Reset</button>
+      </div>
+      <div class="notice" data-i18n="tip">Tip: Bisa pakai semua format share link seperti <code>/s/</code> atau <code>/scl/fi/…</code>. Hasil “bersih” memakai <code>dl.dropboxusercontent.com</code> sehingga langsung unduh.</div>
+
+      <div id="outputs" class="grid hidden" aria-live="polite">
+        <div class="result">
+          <strong style="min-width:140px" data-i18n="direct">Direct (bersih)</strong>
+          <code id="outDirect"></code>
+          <button class="btn secondary" data-copy="outDirect" data-i18n="copy">Copy</button>
+        </div>
+        <div class="result">
+          <strong style="min-width:140px" data-i18n="dl1">Dropbox (dl=1)</strong>
+          <code id="outDl1"></code>
+          <button class="btn secondary" data-copy="outDl1" data-i18n="copy">Copy</button>
+        </div>
+        <div class="result">
+          <strong style="min-width:140px" data-i18n="preview">Preview (opsional)</strong>
+          <code id="outPreview"></code>
+          <button class="btn secondary" data-copy="outPreview" data-i18n="copy">Copy</button>
+        </div>
+      </div>
+
+      <div id="msg" class="notice"></div>
+    </section>
+
+    <footer data-i18n="footer">
+      Dibuat untuk mempermudah berbagi link Dropbox yang langsung mengunduh file. Tidak menyentuh file—hanya mengubah domain/parameter link. Simpan halaman ini dan host di GitHub Pages/Netlify/Vercel untuk dipakai bersama.
+    </footer>
+  </div>
+
+<script>
+(function(){
+  const STR = {
+    id: {
+      title: "Dropbox Direct-Download Link Cleaner",
+      subtitle: "Ubah link Dropbox jadi tautan unduhan langsung untuk dibagikan.",
+      placeholder: "Tempel link Dropbox di sini… (contoh: https://www.dropbox.com/scl/fi/...)",
+      convert: "Bersihkan",
+      reset: "Reset",
+      tip: 'Tip: Bisa pakai semua format share link seperti <code>/s/</code> atau <code>/scl/fi/…</code>. Hasil “bersih” memakai <code>dl.dropboxusercontent.com</code> sehingga langsung unduh.',
+      direct: "Direct (bersih)",
+      dl1: "Dropbox (dl=1)",
+      preview: "Preview (opsional)",
+      copy: "Copy",
+      status_copied: "Tersalin ke clipboard.",
+      status_paste: "Tempel link Dropbox terlebih dahulu.",
+      status_cleaned: "Link berhasil dibersihkan.",
+      status_notdbx: "Bukan link Dropbox.",
+      theme: "Tema",
+      footer: "Dibuat untuk mempermudah berbagi link Dropbox yang langsung mengunduh file. Tidak menyentuh file—hanya mengubah domain/parameter link. Simpan halaman ini dan host di GitHub Pages/Netlify/Vercel untuk dipakai bersama."
+    },
+    en: {
+      title: "Dropbox Direct-Download Link Cleaner",
+      subtitle: "Turn any Dropbox share link into a direct download URL.",
+      placeholder: "Paste a Dropbox link here… (e.g., https://www.dropbox.com/scl/fi/...)",
+      convert: "Clean Link",
+      reset: "Reset",
+      tip: 'Tip: Works with any share format like <code>/s/</code> or <code>/scl/fi/…</code>. The “clean” result uses <code>dl.dropboxusercontent.com</code> for instant download.',
+      direct: "Direct (clean)",
+      dl1: "Dropbox (dl=1)",
+      preview: "Preview (optional)",
+      copy: "Copy",
+      status_copied: "Copied to clipboard.",
+      status_paste: "Paste a Dropbox link first.",
+      status_cleaned: "Link cleaned successfully.",
+      status_notdbx: "Not a Dropbox link.",
+      theme: "Theme",
+      footer: "Built to share Dropbox links as direct downloads. It never touches your files—only changes domain/params. Save this page and host on GitHub Pages/Netlify/Vercel to share with others."
+    }
+  };
+
+  const src = document.getElementById('src');
+  const btn = document.getElementById('btnConvert');
+  const btnReset = document.getElementById('btnReset');
+  const outputs = document.getElementById('outputs');
+  const outDirect = document.getElementById('outDirect');
+  const outDl1 = document.getElementById('outDl1');
+  const outPreview = document.getElementById('outPreview');
+  const msg = document.getElementById('msg');
+  const langSel = document.getElementById('lang');
+  const themeBtn = document.getElementById('themeBtn');
+
+  // Preferences
+  const pref = {
+    get lang() { return localStorage.getItem('lang') || defaultLang(); },
+    set lang(v) { localStorage.setItem('lang', v); },
+    get theme() { return localStorage.getItem('theme') || 'auto'; },
+    set theme(v) { localStorage.setItem('theme', v); }
+  };
+
+  function defaultLang(){
+    const n = navigator.language || 'id';
+    return /^en(\-|$)/i.test(n) ? 'en' : 'id';
+  }
+
+  // i18n
+  function applyI18n(l){
+    const dict = STR[l] || STR.id;
+    document.documentElement.lang = l;
+    // Simple text nodes
+    document.querySelectorAll('[data-i18n]').forEach(el=>{
+      const k = el.getAttribute('data-i18n');
+      if (dict[k]) el.innerHTML = dict[k];
+    });
+    // Placeholder
+    document.querySelectorAll('[data-i18n-placeholder]').forEach(el=>{
+      const k = el.getAttribute('data-i18n-placeholder');
+      if (dict[k]) el.setAttribute('placeholder', dict[k]);
+    });
+  }
+
+  // Theme
+  function systemPrefersDark(){
+    return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+  }
+  function applyTheme(mode){
+    // mode: 'light' | 'dark' | 'auto'
+    const root = document.documentElement;
+    const m = (mode === 'auto') ? (systemPrefersDark() ? 'dark' : 'light') : mode;
+    root.classList.toggle('light', m === 'light');
+    root.classList.toggle('dark', m === 'dark');
+    root.setAttribute('data-theme', mode);
+    themeBtn.querySelector('span[data-i18n="theme"]').textContent = (STR[pref.lang] || STR.id).theme + ' (' + m + ')';
+  }
+
+  // Helpers
+  function isDropboxHost(host){
+    return /(^|\.)dropbox\.com$/i.test(host) || /(^|\.)dropboxusercontent\.com$/i.test(host);
+  }
+  function toDirect(u){
+    const url = new URL(u);
+    if(!isDropboxHost(url.hostname)) throw new Error('NOT_DBX');
+    url.protocol = 'https:';
+    url.hostname = 'dl.dropboxusercontent.com';
+    url.searchParams.delete('dl');
+    return url.toString();
+  }
+  function toDl1(u){
+    const url = new URL(u);
+    if(!isDropboxHost(url.hostname)) throw new Error('NOT_DBX');
+    url.protocol = 'https:';
+    url.hostname = 'www.dropbox.com';
+    url.searchParams.set('dl','1');
+    return url.toString();
+  }
+  function toPreview(u){
+    const url = new URL(u);
+    if(!isDropboxHost(url.hostname)) throw new Error('NOT_DBX');
+    url.protocol = 'https:';
+    url.hostname = 'www.dropbox.com';
+    if(url.searchParams.has('dl')) url.searchParams.set('dl','0');
+    return url.toString();
+  }
+  async function copyFrom(id){
+    const el = document.getElementById(id);
+    const text = el?.textContent || '';
+    if(!text) return;
+    try{ await navigator.clipboard.writeText(text); flash('status_copied'); }
+    catch(e){ flashRaw('Copy failed. Select and press Ctrl/Cmd+C.'); }
+  }
+  function flash(key, isError=false){
+    const dict = STR[pref.lang] || STR.id;
+    msg.textContent = dict[key] || key;
+    msg.style.color = isError ? getComputedStyle(document.documentElement).getPropertyValue('--bad') : getComputedStyle(document.documentElement).getPropertyValue('--muted');
+  }
+  function flashRaw(text, isError=false){
+    msg.textContent = text;
+    msg.style.color = isError ? getComputedStyle(document.documentElement).getPropertyValue('--bad') : getComputedStyle(document.documentElement).getPropertyValue('--muted');
+  }
+
+  // Events
+  btn.addEventListener('click', () => {
+    const val = (src.value || '').trim();
+    if(!val){ outputs.classList.add('hidden'); flash('status_paste', true); return; }
+    try{
+      outDirect.textContent = toDirect(val);
+      outDl1.textContent = toDl1(val);
+      outPreview.textContent = toPreview(val);
+      outputs.classList.remove('hidden');
+      flash('status_cleaned');
+    }catch(e){
+      outputs.classList.add('hidden');
+      flash(e.message === 'NOT_DBX' ? 'status_notdbx' : 'status_paste', true);
+    }
+  });
+  document.addEventListener('click', (e)=>{ const t=e.target; if(t.matches('[data-copy]')) copyFrom(t.getAttribute('data-copy')); });
+  btnReset.addEventListener('click', ()=>{ src.value=''; outputs.classList.add('hidden'); msg.textContent=''; });
+  src.addEventListener('paste', ()=>{ setTimeout(()=>btn.click(),0); });
+
+  // Init preferences
+  langSel.value = pref.lang;
+  applyI18n(langSel.value);
+  applyTheme(pref.theme);
+
+  langSel.addEventListener('change', ()=>{ pref.lang = langSel.value; applyI18n(langSel.value); applyTheme(pref.theme); });
+  themeBtn.addEventListener('click', ()=>{
+    const curr = pref.theme;
+    const next = curr === 'auto' ? 'light' : curr === 'light' ? 'dark' : 'auto';
+    pref.theme = next; applyTheme(next);
+  });
+
+  // react to system theme changes when in auto
+  try{ window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', ()=>{ if(pref.theme==='auto') applyTheme('auto'); }); }catch(e){}
+})();
+</script>
+</body>
+</html>
