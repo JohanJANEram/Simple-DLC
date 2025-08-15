@@ -42,11 +42,11 @@
     input[type="url"]{ flex:1; background:transparent; border:none; outline:none; color:var(--text); font-size:16px; }
     .card{ background:var(--card); border:1px solid var(--border); border-radius:18px; padding:18px; box-shadow: 0 10px 30px rgba(0,0,0,.10);}
     .row{ display:flex; gap:12px; flex-wrap:wrap; }
-    .grid{ display:grid; grid-template-columns:1fr; gap:12px; margin-top:14px; }
-    @media (min-width: 780px){ .grid{ grid-template-columns: 1fr 1fr 1fr; } }
-    .result{ background: transparent; border:1px dashed var(--border); border-radius:14px; padding:12px; display:flex; gap:8px; align-items:center; min-height:56px; max-width:100%; overflow:hidden; }
+    .grid{ display:block; margin-top:16px; }
+
+.result{ background: transparent; border:1px dashed var(--border); border-radius:14px; padding:16px; display:flex; gap:12px; align-items:center; width:100%; max-width:100%; overflow:hidden; }
     .result strong{ min-width:130px; }
-    .result input[type="text"]{ flex:1; display:block; background:transparent; border:none; outline:none; color:var(--text); font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; font-size:14px; padding:6px 0; white-space: nowrap; overflow-x: auto; min-width:0; }
+    .result input[type="text"]{ flex:1; width:100%; display:block; background:transparent; border:none; outline:none; color:var(--text); font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; font-size:14px; padding:8px 0; white-space: nowrap; overflow-x: auto; min-width:0; }
     .notice{ font-size: 13px; color: var(--muted); margin-top:10px; }
     .pill{ display:inline-flex; align-items:center; gap:8px; padding:6px 10px; border-radius:999px; font-size:12px; background: transparent; border:1px solid var(--border); color:var(--muted); }
     .hidden{ display:none; }
@@ -103,10 +103,8 @@
           <button class="btn secondary" data-copy="outDirect" data-i18n="copy">Copy</button>
         </div>
       </div>
-        
-      </div>
 
-      <div id="msg" class="notice"></div>
+      <div id="msg" class="notice" style="padding-left:6px"></div>
     </section>
 
     <footer data-i18n="footer">
